@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mots Mêlés - Migration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #info {
+      margin: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #timer {
+      color: darkred;
+      margin-left: 20px;
+    }
+    #controls {
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 8px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ddd;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(20, 30px);
+      gap: 2px;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .selected {
+      background: yellow;
+    }
+    .found {
+      background: lightgreen !important;
+    }
+    #word-list {
+      max-width: 800px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .word {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #f0f0f0;
+    }
+    .word.found {
+      text-decoration: line-through;
+      background: lightgreen;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mots Mêlés - Migration</h1>
+
+  <div id="controls">
+    <button id="restartBtn">Nouvelle Partie</button>
+  </div>
+
+  <div id="info">
+    Mots trouvés : <span id="foundCount">0</span> / <span id="totalCount">0</span>
+    <span id="timer">05:00</span>
+  </div>
+
+  <div id="grid"></div>
+  <h2>Mots à trouver :</h2>
+  <div id="word-list"></div>
+
+  <script>
+    const words = [
+      "MIGRANTS","MIGRATION","IMMIGRATION","EMIGRATION","EXIL","REFUGIE","ASILE",
+      "FRONTIERE","TRANSIT","MOBILITE","DEPLACEMENT","DIASPORA","INTEGRATION","ACCUEIL",
+      "EXPULSION","DEPORTATION","NATURALISATION","PASSEPORT","VISA","SEJOUR","TERRITOIRE",
+      "ORIGINE","DESTINATION","MINORITE","IDENTITE","RACINES","LANGUE","TRADITION","CULTURE",
+      "SOLIDARITE","HUMANITE","ONG","CONVENTION","REFUGE","TRAVERSEE","MER","NAUFRAGE","SAUVETAGE",
+      "CAMP","BIDONVILLE","HEBERGEMENT","INCLUSION","ADAPTATION","ASSIMILATION","INTOLERANCE",
+      "DISCRIMINATION","RACISME","XENOPHOBIE","CITOYENNETE","NATIONALITE","STATUT","TRAVAIL",
+      "OUVRIER","EMPLOYEUR","ARGENT","ECONOMIE","EXODE","FAMILLE","PARENTE","ENFANT","PARCOURS",
+      "ROUTE","TRAJET","TRAFIC","PASSEUR","RESEAU","LOI","POLITIQUE","QUOTA","DEBAT","OPINION",
+      "CRISE","FLUX","PRESSION","CLIMAT","REINSTALLATION","RETOUR","REINTEGRATION","VOYAGE",
+      "SECURITE","FERMETURE","HUMANITAIRE","DEFI","DIVERSITE","ALTERITE","COHESION","TERRE",
+      "PEUPLE","NATION","PEUR","ESPOIR","ACCULTURATION","RESILIENCE","MEMOIRE","EXPERIENCE","MONDE"
+    ];
+
+    const gridSize = 20;
+    const directions = [
+      {dr:0, dc:1},   // →
+      {dr:1, dc:0},   // ↓
+      {dr:1, dc:1},   // ↘
+      {dr:-1, dc:1}   // ↗
+    ];
+
+    let grid, cells, foundCount, timer, timeLeft;
+
+    function placeWord(grid, word) {
+      let placed = false, tries = 0;
+      while (!placed && tries < 500) {
+        tries++;
+        const dir = directions[Math.floor(Math.random()*directions.length)];
+        const row = Math.floor(Math.random()*gridSize);
+        const col = Math.floor(Math.random()*gridSize);
+        if (row + dir.dr*word.length >= 0 && row + dir.dr*word.length < gridSize &&
+            col + dir.dc*word.length >= 0 && col + dir.dc*word.length < gridSize) {
+          let fits = true;
+          for (let i=0;i<word.length;i++) {
+            const r = row + dir.dr*i, c = col + dir.dc*i;
+            if (grid[r][c] && grid[r][c] !== word[i]) { fits = false; break; }
+          }
+          if (fits) {
+            for (let i=0;i<word.length;i++) {
+              const r = row + dir.dr*i, c = col + dir.dc*i;
+              grid[r][c] = word[i];
+            }
+            placed = true;
+          }
+        }
+      }
+    }
+
+    function generateGrid() {
+      grid = Array.from({length: gridSize}, () => Array(gridSize).fill(""));
+      words.forEach(w => placeWord(grid, w.toUpperCase()));
+      for (let r=0;r<gridSize;r++){
+        for (let c=0;c<gridSize;c++){
+          if (!grid[r][c]) grid[r][c] = String.fromCharCode(65+Math.floor(Math.random()*26));
+        }
+      }
+    }
+
+    function renderGrid() {
+      const gridContainer = document.getElementById("grid");
+      gridContainer.innerHTML = "";
+      cells = [];
+      grid.forEach((row,r)=>{
+        row.forEach((letter,c)=>{
+          const div = document.createElement("div");
+          div.className="cell";
+          div.textContent=letter;
+          div.dataset.row = r;
+          div.dataset.col = c;
+          gridContainer.appendChild(div);
+          cells.push(div);
+        });
+      });
+    }
+
+    function renderWordList() {
+      const wordListContainer = document.getElementById("word-list");
+      wordListContainer.innerHTML = "";
+      words.forEach(w=>{
+        const span=document.createElement("span");
+        span.className="word";
+        span.textContent=w;
+        span.id="word-"+w;
+        wordListContainer.appendChild(span);
+      });
+      document.getElementById("totalCount").textContent = words.length;
+    }
+
+    function initGame() {
+      generateGrid();
+      renderGrid();
+      renderWordList();
+      foundCount = 0;
+      document.getElementById("foundCount").textContent = foundCount;
+      clearInterval(timer);
+      timeLeft = 5*60;
+      timer = setInterval(updateTimer,1000);
+      updateTimer();
+      setupInteractions();
+    }
+
+    // Interaction sélection
+    let isSelecting=false;
+    let selection=[];
+
+    function clearSelection() {
+      selection.forEach(cell=>cell.classList.remove("selected"));
+      selection=[];
+    }
+
+    function setupInteractions() {
+      cells.forEach(cell=>{
+        cell.addEventListener("mousedown",()=>{
+          isSelecting=true;
+          clearSelection();
+          selection.push(cell);
+          cell.classList.add("selected");
+        });
+        cell.addEventListener("mouseenter",()=>{
+          if (isSelecting && !selection.includes(cell)){
+            selection.push(cell);
+            cell.classList.add("selected");
+          }
+        });
+      });
+
+      document.addEventListener("mouseup",()=>{
+        if (isSelecting){
+          isSelecting=false;
+          const word = selection.map(c=>c.textContent).join("");
+          const reversed = selection.map(c=>c.textContent).reverse().join("");
+          if (words.includes(word) || words.includes(reversed)){
+            selection.forEach(c=>c.classList.add("found"));
+            const w = document.getElementById("word-"+word) || document.getElementById("word-"+reversed);
+            if (w && !w.classList.contains("found")) {
+              w.classList.add("found");
+              foundCount++;
+              document.getElementById("foundCount").textContent = foundCount;
+              if (foundCount === words.length) endGame(true);
+            }
+          } else {
+            clearSelection();
+          }
+        }
+      });
+    }
+
+    // Chronomètre
+    function updateTimer(){
+      let m = Math.floor(timeLeft/60);
+      let s = timeLeft%60;
+      document.getElementById("timer").textContent =
+        `${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+      if (timeLeft <= 0) {
+        endGame(false);
+      } else {
+        timeLeft--;
+      }
+    }
+
+    function endGame(won){
+      clearInterval(timer);
+      const score = Math.round((foundCount / words.length) * 100);
+      if (won) {
+        alert("🎉 Bravo ! Vous avez trouvé tous les mots !\n\nScore final : 100%");
+      } else {
+        alert("⏱️ Temps écoulé !\nMots trouvés : " + foundCount + " / " + words.length +
+              "\nScore final : " + score + "%");
+      }
+    }
+
+    // Bouton Nouvelle Partie
+    document.getElementById("restartBtn").addEventListener("click", initGame);
+
+    // Démarrage
+    initGame();
+  </script>
+</body>
+</html>
