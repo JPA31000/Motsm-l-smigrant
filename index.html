@@ -11,26 +11,20 @@
       flex-direction: column;
       align-items: center;
     }
-    h1 {
-      margin-bottom: 10px;
-    }
-    #controls {
-      margin: 15px;
-    }
+    h1 { margin-bottom: 10px; }
+    #controls { margin: 15px; }
     select, button {
       padding: 6px 12px;
       font-size: 15px;
       margin-left: 5px;
+      cursor: pointer;
     }
     #info {
       margin: 10px;
       font-size: 18px;
       font-weight: bold;
     }
-    #timer {
-      color: darkred;
-      margin-left: 20px;
-    }
+    #timer { color: darkred; margin-left: 20px; }
     #game {
       display: flex;
       gap: 30px;
@@ -52,15 +46,13 @@
       cursor: pointer;
       font-weight: bold;
     }
-    .selected {
-      background: yellow;
-    }
-    .found {
-      background: lightgreen !important;
-    }
-    #word-panel {
-      min-width: 300px;
-    }
+    .selected { background: yellow; }
+    .found { background: lightgreen !important; }
+    /* couleurs correction */
+    .solution-h { background: lightblue !important; }
+    .solution-v { background: lightgreen !important; }
+    .solution-d { background: orange !important; color:white; }
+    #word-panel { min-width: 300px; }
     #word-list {
       display: flex;
       flex-direction: column;
@@ -92,6 +84,7 @@
       <option value="90">90</option>
     </select>
     <button id="startBtn">Démarrer</button>
+    <button id="solutionBtn">Solution</button>
   </div>
 
   <div id="info" style="display:none;">
@@ -125,13 +118,13 @@
 
     const gridSize = 20;
     const directions = [
-      {dr:0, dc:1},   // →
-      {dr:1, dc:0},   // ↓
-      {dr:1, dc:1},   // ↘
-      {dr:-1, dc:1}   // ↗
+      {dr:0, dc:1, type:"h"},   // →
+      {dr:1, dc:0, type:"v"},   // ↓
+      {dr:1, dc:1, type:"d"},   // ↘
+      {dr:-1, dc:1, type:"d"}   // ↗
     ];
 
-    let grid, cells, foundCount, timer, timeLeft, words;
+    let grid, cells, foundCount, timer, timeLeft, words, wordPositions;
 
     function shuffleArray(array) {
       return array.sort(() => Math.random() - 0.5);
@@ -147,15 +140,15 @@
         if (row + dir.dr*word.length >= 0 && row + dir.dr*word.length < gridSize &&
             col + dir.dc*word.length >= 0 && col + dir.dc*word.length < gridSize) {
           let fits = true;
+          let positions = [];
           for (let i=0;i<word.length;i++) {
             const r = row + dir.dr*i, c = col + dir.dc*i;
             if (grid[r][c] && grid[r][c] !== word[i]) { fits = false; break; }
+            positions.push({r,c});
           }
           if (fits) {
-            for (let i=0;i<word.length;i++) {
-              const r = row + dir.dr*i, c = col + dir.dc*i;
-              grid[r][c] = word[i];
-            }
+            positions.forEach((p,i) => grid[p.r][p.c] = word[i]);
+            wordPositions[word] = {positions:positions, type:dir.type};
             placed = true;
           }
         }
@@ -164,6 +157,7 @@
 
     function generateGrid() {
       grid = Array.from({length: gridSize}, () => Array(gridSize).fill(""));
+      wordPositions = {};
       words.forEach(w => placeWord(grid, w.toUpperCase()));
       for (let r=0;r<gridSize;r++){
         for (let c=0;c<gridSize;c++){
@@ -192,7 +186,9 @@
     function renderWordList() {
       const wordListContainer = document.getElementById("word-list");
       wordListContainer.innerHTML = "";
-      words.forEach(w=>{
+      // tri alphabétique
+      const sorted = [...words].sort();
+      sorted.forEach(w=>{
         const span=document.createElement("span");
         span.className="word";
         span.textContent=w;
@@ -291,6 +287,29 @@
 
     // Bouton Démarrer
     document.getElementById("startBtn").addEventListener("click", initGame);
+
+    // Bouton Solution avec mot de passe
+    document.getElementById("solutionBtn").addEventListener("click",()=>{
+      const pwd = prompt("Entrez le mot de passe pour afficher la solution :");
+      if (pwd === "123") {
+        words.forEach(w=>{
+          const data = wordPositions[w];
+          if (data) {
+            data.positions.forEach(p=>{
+              const cell = cells.find(c=>c.dataset.row==p.r && c.dataset.col==p.c);
+              if (cell) {
+                if (data.type==="h") cell.classList.add("solution-h");
+                if (data.type==="v") cell.classList.add("solution-v");
+                if (data.type==="d") cell.classList.add("solution-d");
+              }
+            });
+            document.getElementById("word-"+w).style.fontWeight="bold";
+          }
+        });
+      } else {
+        alert("❌ Mot de passe incorrect !");
+      }
+    });
   </script>
 </body>
 </html>
