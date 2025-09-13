@@ -6,13 +6,21 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 20px;
     }
     h1 {
       margin-bottom: 10px;
+    }
+    #controls {
+      margin: 15px;
+    }
+    select, button {
+      padding: 6px 12px;
+      font-size: 15px;
+      margin-left: 5px;
     }
     #info {
       margin: 10px;
@@ -23,25 +31,15 @@
       color: darkred;
       margin-left: 20px;
     }
-    #controls {
-      margin-bottom: 15px;
-    }
-    button {
-      padding: 8px 14px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #f0f0f0;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #ddd;
+    #game {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
     }
     #grid {
       display: grid;
       grid-template-columns: repeat(20, 30px);
       gap: 2px;
-      margin-bottom: 20px;
       user-select: none;
     }
     .cell {
@@ -60,17 +58,21 @@
     .found {
       background: lightgreen !important;
     }
+    #word-panel {
+      min-width: 300px;
+    }
     #word-list {
-      max-width: 800px;
       display: flex;
+      flex-direction: column;
       flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
+      max-height: 600px;
+      gap: 5px;
     }
     .word {
       padding: 4px 8px;
       border-radius: 4px;
       background: #f0f0f0;
+      display: inline-block;
     }
     .word.found {
       text-decoration: line-through;
@@ -82,20 +84,31 @@
   <h1>Mots Mêlés - Migration</h1>
 
   <div id="controls">
-    <button id="restartBtn">Nouvelle Partie</button>
+    <label for="wordCount">Nombre de mots : </label>
+    <select id="wordCount">
+      <option value="20">20</option>
+      <option value="40">40</option>
+      <option value="60">60</option>
+      <option value="90">90</option>
+    </select>
+    <button id="startBtn">Démarrer</button>
   </div>
 
-  <div id="info">
+  <div id="info" style="display:none;">
     Mots trouvés : <span id="foundCount">0</span> / <span id="totalCount">0</span>
     <span id="timer">05:00</span>
   </div>
 
-  <div id="grid"></div>
-  <h2>Mots à trouver :</h2>
-  <div id="word-list"></div>
+  <div id="game" style="display:none;">
+    <div id="grid"></div>
+    <div id="word-panel">
+      <h2>Mots à trouver :</h2>
+      <div id="word-list"></div>
+    </div>
+  </div>
 
   <script>
-    const words = [
+    const allWords = [
       "MIGRANTS","MIGRATION","IMMIGRATION","EMIGRATION","EXIL","REFUGIE","ASILE",
       "FRONTIERE","TRANSIT","MOBILITE","DEPLACEMENT","DIASPORA","INTEGRATION","ACCUEIL",
       "EXPULSION","DEPORTATION","NATURALISATION","PASSEPORT","VISA","SEJOUR","TERRITOIRE",
@@ -118,7 +131,11 @@
       {dr:-1, dc:1}   // ↗
     ];
 
-    let grid, cells, foundCount, timer, timeLeft;
+    let grid, cells, foundCount, timer, timeLeft, words;
+
+    function shuffleArray(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
 
     function placeWord(grid, word) {
       let placed = false, tries = 0;
@@ -186,6 +203,8 @@
     }
 
     function initGame() {
+      const count = parseInt(document.getElementById("wordCount").value);
+      words = shuffleArray(allWords).slice(0,count);
       generateGrid();
       renderGrid();
       renderWordList();
@@ -196,6 +215,8 @@
       timer = setInterval(updateTimer,1000);
       updateTimer();
       setupInteractions();
+      document.getElementById("info").style.display="block";
+      document.getElementById("game").style.display="flex";
     }
 
     // Interaction sélection
@@ -268,11 +289,8 @@
       }
     }
 
-    // Bouton Nouvelle Partie
-    document.getElementById("restartBtn").addEventListener("click", initGame);
-
-    // Démarrage
-    initGame();
+    // Bouton Démarrer
+    document.getElementById("startBtn").addEventListener("click", initGame);
   </script>
 </body>
 </html>
